@@ -140,13 +140,10 @@ final class CommandRunner
     /* ---------------------------------------------------------------------- */
     private function generateModule(string $rawName): void
     {
-        // Use current working directory as project base when available.
-        // Fall back to the library dir if getcwd() is not suitable.
         $cwd = getcwd();
         $libBase = \dirname(__DIR__, 2);
         $base = is_dir($cwd) && is_writable($cwd) ? $cwd : $libBase;
 
-        // Normalize the name to StudlyCase (e.g., blog_posts -> BlogPosts)
         $name = $this->studly($rawName);
         $moduleDir = "{$base}/modules/{$name}";
 
@@ -155,34 +152,34 @@ final class CommandRunner
             return;
         }
 
-        // Create directory structure
+        // Base structure with lowercase assets
         $dirs = [
-            "{$moduleDir}/Core/src",
-            "{$moduleDir}/Core/tests",
-            "{$moduleDir}/Core/config",
-            "{$moduleDir}/database/migrations",
-            "{$moduleDir}/database/seeders",
-            "{$moduleDir}/public",
+            "{$moduleDir}/Core/Services",
+            "{$moduleDir}/Core/Tests",
+            "{$moduleDir}/Core/Config",
+            "{$moduleDir}/Core/Database/Migrations",
+            "{$moduleDir}/Core/Database/Seeders",
+            "{$moduleDir}/Core/Public/assets/css",
+            "{$moduleDir}/Core/Public/assets/js",
+            "{$moduleDir}/Core/routes",
+            "{$moduleDir}/Core/views",
+            "{$moduleDir}/Core/Http/Controllers",
         ];
 
         foreach ($dirs as $dir) {
-            if (!is_dir($dir)) {
-                if (!mkdir($dir, 0775, true) && !is_dir($dir)) {
-                    echo self::badge('ERROR', 'red') . " Failed to create directory: {$dir}\n";
-                    exit(1);
-                }
+            if (!is_dir($dir) && !mkdir($dir, 0775, true) && !is_dir($dir)) {
+                echo self::badge('ERROR', 'red') . " Failed to create directory: {$dir}\n";
+                exit(1);
             }
         }
 
-        /* ----------- Create an example service class (Core/src) ----------- */
-        $namespaceCore = "Modules\\{$name}\\Core";
-        $classFile = "{$moduleDir}/Core/src/{$name}Service.php";
-        $classContent = <<<PHP
+        /* ------------------- Service ------------------- */
+        $serviceFile = "{$moduleDir}/Core/Services/{$name}Service.php";
+        $serviceContent = <<<PHP
 <?php
-
 declare(strict_types=1);
 
-namespace {$namespaceCore};
+namespace Modules\\{$name}\\Core\Services;
 
 final class {$name}Service
 {
@@ -191,57 +188,159 @@ final class {$name}Service
         return 'Module {$name} loaded successfully.';
     }
 }
-
 PHP;
-        file_put_contents($classFile, $classContent);
+        file_put_contents($serviceFile, $serviceContent);
 
-        /* ------------------------- Create Module.php ---------------------- */
-        // Your CLI loader expects modules/<Name>/Module.php to "return" an instance
-        // and provide a register() method.
-        $modulePhp = "{$moduleDir}/Module.php";
-        $namespaceRoot = "Modules\\{$name}";
+        /* ------------------- Module.php (implements ModuleContract) ------------------- */
+        $modulePhp = "{$moduleDir}/Core/Module.php";
         $moduleContent = <<<PHP
 <?php
 
-declare(strict_types=1);
+use App\Modules\ModuleContract;
+use Ivi\Core\Router\Router;
 
-namespace {$namespaceRoot};
+return new class implements ModuleContract {
+    public function name(): string
+    {
+        return '{$name}/Core';
+    }
 
-/**
- * Module bootstrap class.
- * This file SHOULD return an instance: `return new Module();`
- */
-final class Module
-{
-    /**
-     * Called by the CLI pre-boot to let the module register config/binds.
-     */
     public function register(): void
     {
-        // Optionally merge configuration, set globals, etc.
-        // If your helpers exist: config_set('{$name}', ['enabled' => true]);
-        if (function_exists('config_set')) {
-            config_set('{$name}', ['enabled' => true]);
+        \$path = __DIR__ . '/Config/' . strtolower('{$name}') . '.php';
+        if (is_file(\$path)) {
+            \$cfg = require \$path;
+            \$current = function_exists('config') ? (array) config(strtolower('{$name}'), []) : (array) (\$GLOBALS['__ivi_config'][strtolower('{$name}')] ?? []);
+            \$merged = array_replace_recursive(\$current, (array) \$cfg);
+            if (function_exists('config_set')) {
+                config_set(strtolower('{$name}'), \$merged);
+            } else {
+                \$GLOBALS['__ivi_config'][strtolower('{$name}')] = \$merged;
+            }
         }
-        // If you want to register extra migration paths dynamically, you can:
-        // if (function_exists('migrations_add_path')) {
-        //     migrations_add_path(base_path('modules/{$name}/database/migrations'));
-        // }
     }
-}
 
-return new Module();
+    public function boot(Router \$router): void
+    {
+        \App\Controllers\Controller::addViewNamespace(strtolower('{$name}'), __DIR__ . '/views');
 
+        \$routes = __DIR__ . '/routes/web.php';
+        if (is_file(\$routes)) {
+            require \$routes;
+        }
+
+        \$mig = __DIR__ . '/Database/Migrations';
+        if (is_dir(\$mig)) {
+            if (function_exists('migrations')) {
+                \$mgr = migrations();
+                if (is_object(\$mgr) && method_exists(\$mgr, 'addPath')) {
+                    \$mgr->addPath(\$mig);
+                } else {
+                    \$GLOBALS['__ivi_migration_paths'] ??= [];
+                    if (!in_array(\$mig, \$GLOBALS['__ivi_migration_paths'], true)) {
+                        \$GLOBALS['__ivi_migration_paths'][] = \$mig;
+                    }
+                }
+            } else {
+                \$GLOBALS['__ivi_migration_paths'] ??= [];
+                if (!in_array(\$mig, \$GLOBALS['__ivi_migration_paths'], true)) {
+                    \$GLOBALS['__ivi_migration_paths'][] = \$mig;
+                }
+            }
+        }
+
+        \$seed = __DIR__ . '/Database/Seeders';
+        if (is_dir(\$seed)) {
+            \$GLOBALS['__ivi_seeder_paths'] ??= [];
+            if (!in_array(\$seed, \$GLOBALS['__ivi_seeder_paths'], true)) {
+                \$GLOBALS['__ivi_seeder_paths'][] = \$seed;
+            }
+        }
+    }
+};
 PHP;
         file_put_contents($modulePhp, $moduleContent);
 
-        /* ----------------- Create sample migration & seeder ---------------- */
+        /* ------------------- Config ------------------- */
+        $configFile = "{$moduleDir}/Core/Config/" . strtolower($name) . ".php";
+        $configContent = <<<PHP
+<?php
+return [
+    'title' => 'Ivi {$name}',
+];
+PHP;
+        file_put_contents($configFile, $configContent);
+
+        /* ------------------- Public assets ------------------- */
+        $cssFile = "{$moduleDir}/Core/Public/assets/css/style.css";
+        $jsFile  = "{$moduleDir}/Core/Public/assets/js/script.js";
+        file_put_contents($cssFile, "/* CSS for {$name} module */\nbody { font-family: sans-serif; }\n");
+        file_put_contents($jsFile, "// JS for {$name} module\nconsole.log('{$name} module loaded');\n");
+
+        /* ------------------- views ------------------- */
+        $viewFile = "{$moduleDir}/Core/views/home.php";
+        $viewContent = <<<PHP
+<h1>Welcome to {$name} Module</h1>
+<p>This is the default home view for the {$name} module.</p>
+<p>Message from controller: <?= htmlspecialchars(\$message) ?></p>
+<?= \$styles ?? '' ?>
+<?= \$scripts ?? '' ?>
+PHP;
+        file_put_contents($viewFile, $viewContent);
+
+        /* ------------------- Routes ------------------- */
+        $routesFile = "{$moduleDir}/Core/routes/web.php";
+        $homeControllerClass = "Modules\\{$name}\\Core\\Http\\Controllers\\HomeController";
+        $routesContent = <<<PHP
+<?php
+use {$homeControllerClass};
+use Ivi\Http\JsonResponse;
+
+/** @var \Ivi\Core\Router\Router \$router */
+\$router->get('/{$this->snake($name)}', [HomeController::class, 'index']);
+\$router->get('/{$this->snake($name)}/ping', fn() => new JsonResponse([
+    'ok' => true,
+    'module' => '{$name}/Core'
+]));
+PHP;
+        file_put_contents($routesFile, $routesContent);
+
+        /* ------------------- HomeController ------------------- */
+        $controllerFile = "{$moduleDir}/Core/Http/Controllers/HomeController.php";
+        $controllerContent = <<<PHP
+<?php
+namespace Modules\\{$name}\\Core\\Http\\Controllers;
+
+use App\Controllers\Controller;
+use Ivi\Http\HtmlResponse;
+
+class HomeController extends Controller
+{
+    public function index(): HtmlResponse
+    {
+        \$title = (string) (cfg(strtolower('{$name}') . '.title', 'Softadastra {$name}') ?: 'Softadastra {$name}');
+        \$this->setPageTitle(\$title);
+
+        \$message = "Hello from {$name}Controller!";
+        \$styles  = '<link rel="stylesheet" href="' . asset("assets/css/style.css") . '">';
+        \$scripts = '<script src="' . asset("assets/js/script.js") . '" defer></script>';
+
+        return \$this->view(strtolower('{$name}') . '::home', [
+            'title'   => \$title,
+            'message' => \$message,
+            'styles'  => \$styles,
+            'scripts' => \$scripts,
+        ]);
+    }
+}
+PHP;
+        file_put_contents($controllerFile, $controllerContent);
+
+        /* ------------------- Sample migration & seeder ------------------- */
         $migName = date('YmdHis') . "_create_{$this->snake($name)}_table.sql";
-        $migrationFile = "{$moduleDir}/database/migrations/{$migName}";
-        $sampleTable = strtolower($name);
+        $migrationFile = "{$moduleDir}/Core/Database/Migrations/{$migName}";
         $migrationSql = <<<SQL
--- Sample migration for module {$name}
-CREATE TABLE IF NOT EXISTS {$sampleTable} (
+CREATE TABLE IF NOT EXISTS {$this->snake($name)} (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     title VARCHAR(191) NOT NULL,
     created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
@@ -250,39 +349,29 @@ CREATE TABLE IF NOT EXISTS {$sampleTable} (
 SQL;
         file_put_contents($migrationFile, $migrationSql);
 
-        $seederFile = "{$moduleDir}/database/seeders/{$this->snake($name)}_seeder.php";
+        $seederFile = "{$moduleDir}/Core/Database/Seeders/{$name}Seeder.php";
         $seederPhp = <<<PHP
 <?php
-
 declare(strict_types=1);
 
-/**
- * Example seeder for {$name} module.
- * You can run it via: ivi seed  (global + modules)
- */
-try {
-    // \$db = new PDO(...); // or use your DB layer
-    // \$db->exec("INSERT INTO {$sampleTable} (title) VALUES ('Hello from {$name} seeder')");
-    echo "[seed] {$name} ok\\n";
-} catch (\\Throwable \$e) {
-    fwrite(STDERR, "[seed:{$name}] " . \$e->getMessage() . "\\n");
-    exit(1);
+namespace Modules\\{$name}\\Core\\Database\\Seeders;
+
+final class {$name}Seeder
+{
+    public function run(): void
+    {
+        echo "[seed] {$name} ok\\n";
+    }
 }
+
+return new {$name}Seeder();
 PHP;
         file_put_contents($seederFile, $seederPhp);
 
-        /* -------------------------- Update modules.php -------------------- */
+        /* ------------------- Update modules config ------------------- */
         $this->ensureModulesConfig($base, $name);
 
-        /* ----------------------- Update composer.json --------------------- */
-        $this->ensureComposerPsr4($base, "{$name}\\Core\\", "modules/{$name}/Core/src/");
-
-        /* --------------------- Dump autoload (composer) ------------------- */
-        echo self::badge('IVI', 'cyan') . " Composer dump-autoload -o\n";
         passthru('composer dump-autoload -o', $code);
-        if ((int) $code !== 0) {
-            echo self::badge('WARN', 'yellow') . " Autoload refresh failed (code {$code}). Run 'composer dump-autoload -o'.\n";
-        }
 
         echo self::badge('OK', 'green') . " Module '{$name}' scaffolded in modules/{$name}\n";
         echo self::badge('TIP', 'yellow') . " Next steps:\n";
@@ -290,6 +379,7 @@ PHP;
         echo "  - Seed (optional): ivi seed\n";
         echo "  - Use service: new Modules\\{$name}\\Core\\{$name}Service()\n";
     }
+
 
     /* ---------------------------------------------------------------------- */
     /* UTILS                                                                  */

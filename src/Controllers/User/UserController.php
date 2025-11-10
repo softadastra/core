@@ -61,7 +61,7 @@ use Ivi\Core\Validation\Validator;
  * @see \Ivi\Core\Validation\ValidationException
  * @see \App\Models\User
  */
-class UserController extends Controller
+final class UserController extends Controller
 {
     use ValidatesRequests;
 
