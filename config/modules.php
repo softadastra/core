@@ -1,11 +1,11 @@
 <?php
-return [
-    // ordre = priorité de chargement
-    'modules' => [
-        'Market/Core',
-        'Market/Products',
-        'Business/Core',
-        'Digital/Core',
-        // ...
-    ],
-];
+
+declare(strict_types=1);
+
+return array(
+  'modules' =>
+  array(
+    0 => 'Market/Core',
+    1 => 'Tests',
+  ),
+);

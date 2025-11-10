@@ -73,3 +73,10 @@ build/
 # Security / Gitleaks
 gitleaks*.json
 gitleaks*.sarif
+
+.phpunit.cache
+
+# public/modules
+public/modules/*
+!public/modules/.gitignore
+

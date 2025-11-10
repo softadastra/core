@@ -11,18 +11,18 @@
   ],
   "autoload": {
     "psr-4": {
+      "App\\": "src/",
+      "Ivi\\Config\\": "config/",
       "Ivi\\Core\\": "core/",
       "Ivi\\Http\\": "core/Http/",
-      "Ivi\\Config\\": "config/",
-      "Ivi\\Support\\": "support/",
       "Ivi\\Router\\": "router/",
-      "App\\": "src/",
-      "Softadastra\\Modules\\": "src/Modules/",
-      "Market\\Core\\": "modules/Market/Core/src/"
+      "Ivi\\Support\\": "support/",
+      "Tests\\Core\\": "modules/Tests/Core/src/"
     },
     "files": [
       "core/Support/Helpers.php",
-      "support/ide-stubs.php"
+      "support/ide-stubs.php",
+      "support/modules_autoload.php"
     ]
   },
   "bin": [
@@ -44,8 +44,17 @@
   },
   "scripts": {
     "serve": "php -S 127.0.0.1:8000 -t public",
+    "serve:run": "@php bin/ivi serve:run",
     "test": "vendor/bin/phpunit",
-    "lint": "vendor/bin/php-cs-fixer fix --allow-risky=yes"
+    "lint": "vendor/bin/php-cs-fixer fix --allow-risky=yes",
+    "coverage": "XDEBUG_MODE=coverage vendor/bin/phpunit",
+    "deploy": "@php bin/ivi deploy",
+    "post-install-cmd": [
+      "@php -r \"file_exists('vendor/bin/ivi') ? passthru('php vendor/bin/ivi modules:publish-assets --copy') : (file_exists('bin/ivi') ? passthru('php bin/ivi modules:publish-assets --copy') : 0);\""
+    ],
+    "post-update-cmd": [
+      "@php -r \"file_exists('vendor/bin/ivi') ? passthru('php vendor/bin/ivi modules:publish-assets --copy') : (file_exists('bin/ivi') ? passthru('php bin/ivi modules:publish-assets --copy') : 0);\""
+    ]
   },
   "config": {
     "process-timeout": 0,

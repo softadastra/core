@@ -3,21 +3,14 @@
 
 <head>
     <meta charset="utf-8">
-    <title>
-        <?php
-        $safeTitle = isset($title) && $title !== null && $title !== ''
-            ? (string)$title
-            : 'ivi.php';
-        echo htmlspecialchars($safeTitle, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-        ?>
-    </title>
+    <title><?= isset($title) ? htmlspecialchars($title) : 'ivi.php' ?></title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="light dark">
     <?= $meta ?? '' ?>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/png" href="<?= asset('assets/favicon/favicon.png') ?>">
-    <link rel="apple-touch-icon" href="<?= asset('assets/favicon/favicon.png') ?>">
+    <link rel="icon" href="<?= $favicon ?? asset('assets/favicon/favicon.png') ?>">
+    <link rel="stylesheet" href="<?= $css ?? asset('assets/css/app.css') ?>">
     <meta name="theme-color" content="#008037">
 
     <!-- Global CSS -->

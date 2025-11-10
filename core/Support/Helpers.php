@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+use Dotenv\Dotenv;
+
+
 /**
  * -----------------------------------------------------------------------------
  * Global Helpers & Aliases for Ivi.php
@@ -360,5 +363,111 @@ if (!function_exists('config_set')) {
     function config_set(string $key, array $value): void
     {
         $GLOBALS['__ivi_config'][$key] = $value;
+    }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Environment Helpers                                                        */
+/* -------------------------------------------------------------------------- */
+
+if (!function_exists('env')) {
+    /**
+     * Get an environment variable (from $_ENV, $_SERVER, or getenv()).
+     *
+     * @param string $key
+     * @param mixed  $default
+     * @return mixed
+     */
+    function env(string $key, mixed $default = null): mixed
+    {
+        if (array_key_exists($key, $_ENV)) {
+            return $_ENV[$key];
+        }
+        if (array_key_exists($key, $_SERVER)) {
+            return $_SERVER[$key];
+        }
+        $val = getenv($key);
+        return $val !== false ? $val : $default;
+    }
+}
+
+if (!function_exists('load_env')) {
+    /**
+     * Load variables from .env (safe: ignore missing).
+     *
+     * @param string|null $directory Project root by default
+     */
+    function load_env(?string $directory = null): void
+    {
+        $dir = $directory ?: base_path();
+        if (is_file($dir . '/.env')) {
+            Dotenv::createImmutable($dir)->safeLoad();
+        }
+    }
+}
+
+if (!function_exists('app_path')) {
+    /** Absolute path to /src (application code). */
+    function app_path(string $path = ''): string
+    {
+        $base = base_path('src');
+        return $path !== '' ? $base . DIRECTORY_SEPARATOR . ltrim($path, DIRECTORY_SEPARATOR) : $base;
+    }
+}
+
+if (!function_exists('config_path')) {
+    /** Absolute path to /config. */
+    function config_path(string $path = ''): string
+    {
+        $base = base_path('config');
+        return $path !== '' ? $base . DIRECTORY_SEPARATOR . ltrim($path, DIRECTORY_SEPARATOR) : $base;
+    }
+}
+
+if (!function_exists('module_asset')) {
+    /**
+     * Generate a public URL for a file inside a module's assets or public directory.
+     *
+     * Examples:
+     *   module_asset('Market/Core', 'softadastra-market.png');
+     *   → /modules/Market/Core/public/softadastra-market.png
+     *
+     *   module_asset('Market/Core', 'assets/css/style.css');
+     *   → /modules/Market/Core/assets/css/style.css
+     *
+     * @param  string  $module  Module name in the format "Vendor/Module"
+     * @param  string  $path    Path inside the module (assets/, public/, etc.)
+     * @return string           A web-accessible URL
+     */
+    if (!function_exists('module_asset')) {
+        function module_asset(string $module, string $path): string
+        {
+            $modulePath = trim(str_replace('\\', '/', $module), '/');
+            $path = ltrim($path, '/'); // ex: 'softadastra-market.png' ou 'assets/css/style.css'
+
+            // NE PAS préfixer par "public/" ici !
+            return function_exists('asset')
+                ? asset("modules/{$modulePath}/{$path}")
+                : "/modules/{$modulePath}/{$path}";
+        }
+    }
+}
+
+if (!function_exists('module_view_path')) {
+    /**
+     * Resolve the absolute path to a module's view file.
+     *
+     * Example:
+     *   module_view_path('Market/Core', 'home.php');
+     *   → /path/to/project/modules/Market/Core/views/home.php
+     *
+     * @param  string  $module
+     * @param  string  $view
+     * @return string
+     */
+    function module_view_path(string $module, string $view): string
+    {
+        $base = base_path("modules/" . trim(str_replace('\\', '/', $module), '/'));
+        return "{$base}/views/" . ltrim($view, '/');
     }
 }

@@ -6,6 +6,6 @@ return [
 
     // Branding
     'brand'      => $_ENV['APP_BRAND'] ?? 'softadastra',
-    'theme'      => $_ENV['APP_THEME'] ?? 'light',
+    'theme'      => $_ENV['APP_THEME'] ?? 'dark',
     'brand_logo' => $_ENV['APP_BRAND_LOGO'] ?? '/assets/logo/ivi.png',
 ];

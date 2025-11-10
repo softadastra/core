@@ -1,5 +1,5 @@
 <?php
 
 return [
-    'title' => 'Softadastra Market',
+    'title' => 'Ivi Market',
 ];

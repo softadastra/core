@@ -8,8 +8,7 @@ use Ivi\Http\Request;
 use Ivi\Core\Router\Router;
 use Ivi\Core\Debug\Logger;
 use Ivi\Core\Exceptions\ExceptionHandler;
-use Softadastra\Modules\ModuleRegistry;
-
+use App\Modules\ModuleRegistry;
 
 /**
  * Class App
@@ -138,9 +137,42 @@ final class App
     }
 
     /**
-     * Charge et démarre les modules déclarés dans config/modules.php
-     * - register() pour merger config / binder services
-     * - boot() pour routes / vues / migrations
+     * -----------------------------------------------------------------------------
+     * Load and initialize all declared application modules.
+     * -----------------------------------------------------------------------------
+     *
+     * This method dynamically loads all modules listed in `config/modules.php`
+     * and performs a two-phase initialization:
+     *
+     * 1. **Registration Phase (`register()`)**
+     *    - Merges module-specific configuration files.
+     *    - Binds service providers or container dependencies.
+     *
+     * 2. **Boot Phase (`boot()`)**
+     *    - Registers routes, views, and database migrations.
+     *    - Integrates each module with the application router.
+     *
+     * ## Design Notes
+     * - Each module is represented by a `Module.php` file that returns an instance
+     *   implementing the `App\Modules\ModuleContract` interface.
+     * - Modules are discovered based on the `config/modules.php` load order.
+     * - Safe defaults: missing or invalid module files are silently ignored.
+     * - Fully compatible with the `ModuleRegistry`, which orchestrates the lifecycle.
+     *
+     * ## Example Structure
+     * ```
+     * config/modules.php
+     * modules/
+     * ├── Market/Core/Module.php
+     * ├── Market/Products/Module.php
+     * └── Blog/Core/Module.php
+     * ```
+     *
+     * @internal
+     * @return void
+     * @throws \RuntimeException If the module configuration file is missing.
+     * @see App\Modules\ModuleContract
+     * @see App\Modules\ModuleRegistry
      */
     private function loadModules(): void
     {
@@ -153,15 +185,16 @@ final class App
         foreach ($modulesList as $slug) {
             $moduleFile = $this->baseDir . "/modules/{$slug}/Module.php";
             if (is_file($moduleFile)) {
-                /** @var \Softadastra\Modules\ModuleContract $module */
-                $module = require $moduleFile; // retourne une instance
+                /** @var \App\Modules\ModuleContract $module */
+                $module = require $moduleFile; // returns a module instance
                 $registry->add($module);
             }
         }
 
-        // 1) config/bind
+        // 1) Configuration & service binding
         $registry->registerAll();
-        // 2) routes/views/migrations avec TON router
+
+        // 2) Routes, views, migrations (with router context)
         $registry->bootAll($this->router);
     }
 

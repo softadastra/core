@@ -21,7 +21,8 @@
   --code: var(--code-bg);
 }
 
-/* @media (prefers-color-scheme: dark) {
+/* Dark mode overrides */
+@media (prefers-color-scheme: dark) {
   :root {
     --bg: #0f1115;
     --fg: #e6edf3;
@@ -29,15 +30,16 @@
     --panel: #0f141a;
     --border: #1f252c;
 
-    --code-bg: #0f172a;
+    /* Code block (slightly different dark hue) */
+    --code-bg: #0f172a; /* deep slate */
     --code-fg: #e2e8f0;
     --code-border: #0b1220;
     --code-line: #111827;
     --code-accent: #7dd3fc;
 
-    --code: var(--code-bg);
+    --code: var(--code-bg); /* keep alias consistent */
   }
-} */
+}
 
 * {
   box-sizing: border-box;
