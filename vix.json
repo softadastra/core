@@ -1,7 +1,7 @@
 {
   "name": "core",
   "namespace": "softadastra",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "type": "library",
   "include": "include",
   "license": "MIT",
