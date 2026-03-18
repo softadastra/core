@@ -11,8 +11,6 @@ It is designed to be:
 * Deterministic
 * Fully reusable
 
----
-
 ## Purpose
 
 The goal of `softadastra/core` is simple:
@@ -20,8 +18,6 @@ The goal of `softadastra/core` is simple:
 > Provide a clean, dependency-free foundation for all higher-level modules.
 
 Everything in Softadastra depends on this module.
-
----
 
 ## Core Principle
 
@@ -32,8 +28,6 @@ The `core` module defines primitives that must remain:
 * Generic
 * Independent
 * Long-term stable
-
----
 
 ## Responsibilities
 
@@ -46,8 +40,6 @@ The `core` module provides:
 * Hash utilities
 * Configuration primitives
 
----
-
 ## What this module does NOT do
 
 * No sync logic
@@ -57,23 +49,17 @@ The `core` module provides:
 
 👉 It defines primitives, not behavior.
 
----
-
 ## Design Principles
 
 ### 1. Independence
 
 `core` must not depend on any other internal module.
 
----
-
 ### 2. Stability
 
 Changes in `core` affect the entire system.
 
 It must evolve slowly and carefully.
-
----
 
 ### 3. Determinism
 
@@ -83,8 +69,6 @@ All primitives must behave consistently across:
 * Machines
 * Time
 
----
-
 ### 4. Reusability
 
 Designed to be extracted into:
@@ -92,8 +76,6 @@ Designed to be extracted into:
 * Softadastra Core
 * SDK
 * Other systems
-
----
 
 ## Module Structure
 
@@ -109,8 +91,6 @@ modules/core/
 └── src/
 ```
 
----
-
 ## Core Components
 
 ### Types
@@ -123,8 +103,6 @@ Examples:
 * Generic containers
 * Utility structures
 
----
-
 ### Errors
 
 Structured error handling system.
@@ -134,8 +112,6 @@ Features:
 * Typed errors
 * Severity levels
 * Context support
-
----
 
 ### Identifiers (IDs)
 
@@ -147,8 +123,6 @@ Strongly-typed identifiers:
 
 👉 Prevents misuse of raw primitives.
 
----
-
 ### Time
 
 Time-related utilities:
@@ -156,8 +130,6 @@ Time-related utilities:
 * Timestamps
 * Monotonic clocks
 * Duration helpers
-
----
 
 ### Hash
 
@@ -167,8 +139,6 @@ Hashing utilities:
 * Content fingerprinting
 * Deterministic hashing
 
----
-
 ### Config
 
 Configuration primitives:
@@ -176,8 +146,6 @@ Configuration primitives:
 * Structured config objects
 * Validation
 * Runtime-safe access
-
----
 
 ## Example Usage
 
@@ -197,8 +165,6 @@ if (!fileId.isValid())
 }
 ```
 
----
-
 ## Dependencies
 
 ### Internal
@@ -208,8 +174,6 @@ None.
 ### External
 
 * C++20 standard library only
-
----
 
 ## Integration
 
@@ -223,16 +187,12 @@ Used by all modules:
 * sync
 * store
 
----
-
 ## Rules
 
 * No dependency on higher-level modules
 * No business logic
 * No side effects
 * No hidden behavior
-
----
 
 ## When to modify this module
 
@@ -241,8 +201,6 @@ Only if:
 * A primitive is needed by multiple modules
 * The abstraction is fundamental
 * It does not introduce coupling
-
----
 
 ## When NOT to modify
 
@@ -253,8 +211,6 @@ Do not add:
 * Filesystem logic
 * Application-specific code
 
----
-
 ## Roadmap
 
 * Deterministic ID generation strategies
@@ -262,15 +218,11 @@ Do not add:
 * Structured logging primitives
 * Platform abstraction layer
 
----
-
 ## Philosophy
 
 The `core` module is the foundation.
 
 > If core is clean, everything built on top stays clean.
-
----
 
 ## Summary
 
@@ -279,7 +231,11 @@ The `core` module is the foundation.
 * Used everywhere
 * Designed for long-term stability
 
----
+## Installation
+
+```bash
+vix add @softadastra/core
+```
 
 ## License
 
