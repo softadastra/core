@@ -1,0 +1,38 @@
+{
+  "name": "core",
+  "namespace": "softadastra",
+  "version": "1.0.0",
+  "type": "library",
+  "include": "include",
+  "license": "MIT",
+  "description": "Foundational primitives for Softadastra systems: types, errors, ids, time, hash, and config. Designed for deterministic, dependency-free, offline-first architectures.",
+  "keywords": [
+    "softadastra",
+    "core",
+    "foundation",
+    "primitives",
+    "types",
+    "error-handling",
+    "ids",
+    "time",
+    "hash",
+    "config",
+    "deterministic",
+    "offline-first",
+    "no-dependencies",
+    "c++",
+    "cpp",
+    "c++20",
+    "cross-platform",
+    "systems",
+    "infrastructure",
+    "library"
+  ],
+  "repository": "https://github.com/softadastra/core",
+  "authors": [
+    {
+      "name": "Gaspard Kirira",
+      "github": "Gaspardkirira"
+    }
+  ]
+}
