@@ -6,39 +6,40 @@ project(softadastra_core
     LANGUAGES CXX
 )
 
+include(GNUInstallDirs)
+
 # ========================
 # Options
 # ========================
 option(SOFTADASTRA_CORE_BUILD_TESTS "Build core tests" ON)
 
 # ========================
-# Library
+# Global settings
 # ========================
-add_library(softadastra_core)
-
-# C++ standard
-target_compile_features(softadastra_core PUBLIC cxx_std_20)
-
-# ========================
-# Include directories
-# ========================
-target_include_directories(softadastra_core
-    PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-        $<INSTALL_INTERFACE:include>
-)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # ========================
 # Sources
 # ========================
-file(GLOB_RECURSE CORE_SOURCES
+file(GLOB_RECURSE SOFTADASTRA_CORE_SOURCES
     CONFIGURE_DEPENDS
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
 )
 
-target_sources(softadastra_core
-    PRIVATE
-        ${CORE_SOURCES}
+# ========================
+# Library
+# ========================
+add_library(softadastra_core ${SOFTADASTRA_CORE_SOURCES})
+add_library(softadastra::core ALIAS softadastra_core)
+
+target_compile_features(softadastra_core PUBLIC cxx_std_20)
+
+target_include_directories(softadastra_core
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
 # ========================
@@ -51,16 +52,14 @@ else()
 endif()
 
 # ========================
-# Position Independent Code
+# Target properties
 # ========================
 set_target_properties(softadastra_core PROPERTIES
-    POSITION_INDEPENDENT_CODE ON
+    OUTPUT_NAME softadastra_core
+    VERSION ${PROJECT_VERSION}
+    SOVERSION 0
+    EXPORT_NAME core
 )
-
-# ========================
-# Namespacing
-# ========================
-add_library(softadastra::core ALIAS softadastra_core)
 
 # ========================
 # Tests
@@ -69,3 +68,13 @@ if(SOFTADASTRA_CORE_BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
 endif()
+
+# ========================
+# Summary
+# ========================
+message(STATUS "------------------------------------------------------")
+message(STATUS "softadastra::core configured (${PROJECT_VERSION})")
+message(STATUS "Include dir:     ${CMAKE_CURRENT_SOURCE_DIR}/include")
+message(STATUS "Build tests:     ${SOFTADASTRA_CORE_BUILD_TESTS}")
+message(STATUS "Build type:      ${CMAKE_BUILD_TYPE}")
+message(STATUS "------------------------------------------------------")
