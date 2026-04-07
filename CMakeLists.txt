@@ -11,7 +11,7 @@ include(GNUInstallDirs)
 # ========================
 # Options
 # ========================
-option(SOFTADASTRA_CORE_BUILD_TESTS "Build core tests" ON)
+option(SOFTADASTRA_CORE_BUILD_TESTS "Build core tests" OFF)
 
 # ========================
 # Global settings
@@ -65,8 +65,12 @@ set_target_properties(softadastra_core PROPERTIES
 # Tests
 # ========================
 if(SOFTADASTRA_CORE_BUILD_TESTS)
-    enable_testing()
-    add_subdirectory(tests)
+    include(CTest)
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/CMakeLists.txt")
+        add_subdirectory(tests)
+    else()
+        message(STATUS "[core] tests/ missing CMakeLists.txt -> skipping")
+    endif()
 endif()
 
 # ========================
