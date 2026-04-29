@@ -1,23 +1,44 @@
-/*
- * StringUtils.hpp
+/**
+ *
+ *  @file StringUtils.hpp
+ *  @author Gaspard Kirira
+ *
+ *  Copyright 2026, Softadastra.
+ *
+ *  Licensed under the Apache License, Version 2.0.
+ *
+ *  Softadastra Drive
+ *
  */
+
 #ifndef SOFTADASTRA_DRIVE_CORE_STRING_UTILS_HPP
 #define SOFTADASTRA_DRIVE_CORE_STRING_UTILS_HPP
 
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace softadastra::core::utils
 {
+
+  /**
+   * @brief Utility functions for string manipulation.
+   */
   class StringUtils
   {
   public:
-    static bool is_empty(const std::string &s) noexcept
+    /**
+     * @brief Returns true if string is empty.
+     */
+    [[nodiscard]] static bool is_empty(std::string_view s) noexcept
     {
       return s.empty();
     }
 
-    static std::string trim(const std::string &s)
+    /**
+     * @brief Trims whitespace (view version, no allocation).
+     */
+    [[nodiscard]] static std::string_view trim_view(std::string_view s) noexcept
     {
       std::size_t start = 0;
       while (start < s.size() && is_space(s[start]))
@@ -30,7 +51,20 @@ namespace softadastra::core::utils
       return s.substr(start, end - start);
     }
 
-    static std::vector<std::string> split(const std::string &s, char delimiter)
+    /**
+     * @brief Trims whitespace (owning string).
+     */
+    [[nodiscard]] static std::string trim(std::string_view s)
+    {
+      auto v = trim_view(s);
+      return std::string(v);
+    }
+
+    /**
+     * @brief Splits a string by delimiter.
+     */
+    [[nodiscard]] static std::vector<std::string>
+    split(std::string_view s, char delimiter)
     {
       std::vector<std::string> result;
       std::string current;
@@ -39,7 +73,7 @@ namespace softadastra::core::utils
       {
         if (c == delimiter)
         {
-          result.push_back(current);
+          result.push_back(std::move(current));
           current.clear();
         }
         else
@@ -48,12 +82,15 @@ namespace softadastra::core::utils
         }
       }
 
-      result.push_back(current);
+      result.push_back(std::move(current));
       return result;
     }
 
   private:
-    static bool is_space(char c) noexcept
+    /**
+     * @brief Checks if character is whitespace.
+     */
+    [[nodiscard]] static constexpr bool is_space(char c) noexcept
     {
       return c == ' ' || c == '\t' || c == '\n' || c == '\r';
     }

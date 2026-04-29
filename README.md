@@ -2,14 +2,14 @@
 
 > Foundational primitives for Softadastra systems.
 
-The `core` module provides the **fundamental building blocks** used across all Softadastra modules.
+The `core` module provides the fundamental building blocks used across all Softadastra modules.
 
 It is designed to be:
 
-* Minimal
-* Stable
-* Deterministic
-* Fully reusable
+- Minimal
+- Stable
+- Deterministic
+- Fully reusable
 
 ## Purpose
 
@@ -21,33 +21,34 @@ Everything in Softadastra depends on this module.
 
 ## Core Principle
 
-> Build once. Reuse everywhere.
+> *Build once. Reuse everywhere.*
 
 The `core` module defines primitives that must remain:
 
-* Generic
-* Independent
-* Long-term stable
+- Generic
+- Independent
+- Long-term stable
 
 ## Responsibilities
 
 The `core` module provides:
 
-* Shared types
-* Error system
-* Strongly-typed identifiers
-* Time utilities
-* Hash utilities
-* Configuration primitives
+- Shared types (`Result`, `StrongType`, etc.)
+- Error system (`Error`, `ErrorCode`, `Severity`)
+- Strongly-typed identifiers (`FileId`, `DeviceId`, `OperationId`)
+- Time utilities (`Timestamp`, `Duration`, `Clock`)
+- Hash primitives (`Hash`, `Hasher`, `HashAlgorithm`)
+- Configuration primitives (`Config`, `ConfigValue`, `ConfigValidator`)
+- Low-level utilities (`Assert`, `ScopeGuard`, `StringUtils`)
 
 ## What this module does NOT do
 
-* No sync logic
-* No filesystem logic
-* No network logic
-* No storage logic
+- No sync logic
+- No filesystem logic
+- No network logic
+- No storage logic
 
-👉 It defines primitives, not behavior.
+> 👉 It defines primitives, not behavior.
 
 ## Design Principles
 
@@ -57,37 +58,29 @@ The `core` module provides:
 
 ### 2. Stability
 
-Changes in `core` affect the entire system.
-
-It must evolve slowly and carefully.
+Changes in `core` affect the entire system. It must evolve slowly and carefully.
 
 ### 3. Determinism
 
-All primitives must behave consistently across:
-
-* Platforms
-* Machines
-* Time
+All primitives must behave consistently across platforms, machines, and time.
 
 ### 4. Reusability
 
-Designed to be extracted into:
-
-* Softadastra Core
-* SDK
-* Other systems
+Designed to be reusable in Softadastra Core, SDKs, and external systems.
 
 ## Module Structure
 
-```id="c0r3x1"
+```
 modules/core/
 ├── include/softadastra/core/
-│   ├── types/
+│   ├── config/
 │   ├── errors/
+│   ├── hash/
 │   ├── ids/
 │   ├── time/
-│   ├── hash/
-│   └── config/
+│   ├── types/
+│   ├── utils/
+│   └── Core.hpp
 └── src/
 ```
 
@@ -95,141 +88,160 @@ modules/core/
 
 ### Types
 
-Common reusable types used across modules.
+Reusable generic primitives:
 
-Examples:
-
-* Strong wrappers
-* Generic containers
-* Utility structures
+- `Result<T, E>`
+- `StrongType<T, Tag>`
+- `NonCopyable`
 
 ### Errors
 
-Structured error handling system.
+Structured error system:
 
-Features:
+- `Error`
+- `ErrorCode`
+- `Severity`
+- `ErrorContext`
 
-* Typed errors
-* Severity levels
-* Context support
+> 👉 Designed for explicit error handling (no exceptions required)
 
 ### Identifiers (IDs)
 
 Strongly-typed identifiers:
 
-* `FileId`
-* `DeviceId`
-* `OperationId`
+- `FileId`
+- `DeviceId`
+- `OperationId`
 
-👉 Prevents misuse of raw primitives.
+> 👉 Prevents misuse of raw primitives (e.g. mixing IDs)
 
 ### Time
 
 Time-related utilities:
 
-* Timestamps
-* Monotonic clocks
-* Duration helpers
+- `Timestamp` (persistent time)
+- `Duration` (time intervals)
+- `Clock` (wall + monotonic)
 
 ### Hash
 
-Hashing utilities:
+Hashing primitives:
 
-* File hashing
-* Content fingerprinting
-* Deterministic hashing
+- `Hash`
+- `HashAlgorithm`
+- `Hasher` (interface)
 
 ### Config
 
-Configuration primitives:
+Configuration system:
 
-* Structured config objects
-* Validation
-* Runtime-safe access
+- `Config`
+- `ConfigValue`
+- `ConfigValidator`
+
+### Utils
+
+Low-level helpers:
+
+- `Assert`
+- `ScopeGuard`
+- `StringUtils`
 
 ## Example Usage
 
-```cpp id="ex8"
-#include <softadastra/core/ids/FileId.hpp>
-#include <softadastra/core/time/Timestamp.hpp>
-#include <softadastra/core/errors/Error.hpp>
+```cpp
+#include <softadastra/core/Core.hpp>
 
 using namespace softadastra::core;
 
-FileId fileId = FileId::generate();
-auto now = Timestamp::now();
-
-if (!fileId.isValid())
+int main()
 {
-    throw Error("Invalid file id");
+    auto fileId = ids::FileId::generate();
+    auto now    = time::Timestamp::now();
+
+    if (!fileId.is_valid())
+    {
+        auto err = errors::Error::make(
+            errors::ErrorCode::InvalidArgument,
+            "invalid file id");
+
+        std::cout << err.message() << "\n";
+        return 1;
+    }
+
+    std::cout << "FileId: "    << fileId.str()    << "\n";
+    std::cout << "Now (ms): "  << now.millis()    << "\n";
+
+    return 0;
 }
+```
+
+## Public API
+
+Include everything via:
+
+```cpp
+#include <softadastra/core/Core.hpp>
 ```
 
 ## Dependencies
 
-### Internal
+**Internal:** none.
 
-None.
-
-### External
-
-* C++20 standard library only
+**External:** C++20 standard library only.
 
 ## Integration
 
 Used by all modules:
 
-* fs
-* wal
-* metadata
-* discovery
-* transport
-* sync
-* store
+- `fs`
+- `wal`
+- `metadata`
+- `discovery`
+- `transport`
+- `sync`
+- `store`
 
 ## Rules
 
-* No dependency on higher-level modules
-* No business logic
-* No side effects
-* No hidden behavior
+- No dependency on higher-level modules
+- No business logic
+- No side effects
+- No hidden behavior
 
 ## When to modify this module
 
 Only if:
 
-* A primitive is needed by multiple modules
-* The abstraction is fundamental
-* It does not introduce coupling
+- A primitive is needed by multiple modules
+- The abstraction is fundamental
+- It does not introduce coupling
 
-## When NOT to modify
+**Do not add:**
 
-Do not add:
-
-* Sync logic
-* Network logic
-* Filesystem logic
-* Application-specific code
+- Sync logic
+- Network logic
+- Filesystem logic
+- Application-specific code
 
 ## Roadmap
 
-* Deterministic ID generation strategies
-* Streaming hash utilities
-* Structured logging primitives
-* Platform abstraction layer
+- [ ] Deterministic ID generation strategies
+- [ ] Streaming hash utilities
+- [ ] Structured logging primitives
+- [ ] Platform abstraction layer
 
 ## Philosophy
 
-The `core` module is the foundation.
-
+> The `core` module is the foundation.
 > If core is clean, everything built on top stays clean.
 
 ## Summary
 
-* Lowest-level module
-* No internal dependencies
-* Used everywhere
-* Designed for long-term stability
+- Lowest-level module
+- No internal dependencies
+- Used everywhere
+- Designed for long-term stability
 
 ## Installation
 
@@ -239,4 +251,4 @@ vix add @softadastra/core
 
 ## License
 
-See root LICENSE file.
+Licensed under the Apache License, Version 2.0.
