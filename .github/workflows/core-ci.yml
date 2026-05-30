@@ -1,0 +1,271 @@
+name: Core CI
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - dev
+      - release/**
+    paths:
+      - ".github/workflows/core-ci.yml"
+      - "CMakeLists.txt"
+      - "cmake/**"
+      - "include/**"
+      - "src/**"
+      - "tests/**"
+      - "examples/**"
+      - "README.md"
+      - "CHANGELOG.md"
+
+  pull_request:
+    branches:
+      - main
+      - master
+      - dev
+      - release/**
+    paths:
+      - ".github/workflows/core-ci.yml"
+      - "CMakeLists.txt"
+      - "cmake/**"
+      - "include/**"
+      - "src/**"
+      - "tests/**"
+      - "examples/**"
+      - "README.md"
+      - "CHANGELOG.md"
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  BUILD_JOBS: 2
+
+jobs:
+  build:
+    name: Build Core (${{ matrix.compiler }}, ${{ matrix.build_type }}, tests=${{ matrix.tests }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler:
+          - gcc
+          - clang
+        build_type:
+          - Debug
+          - Release
+        tests:
+          - ON
+          - OFF
+
+    steps:
+      - name: Checkout core repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            cmake \
+            ninja-build \
+            clang \
+            g++ \
+            pkg-config \
+            git \
+            ca-certificates
+
+      - name: Select compiler
+        run: |
+          if [ "${{ matrix.compiler }}" = "clang" ]; then
+            echo "CC=clang" >> "$GITHUB_ENV"
+            echo "CXX=clang++" >> "$GITHUB_ENV"
+          else
+            echo "CC=gcc" >> "$GITHUB_ENV"
+            echo "CXX=g++" >> "$GITHUB_ENV"
+          fi
+
+      - name: Configure
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+            -DSOFTADASTRA_CORE_BUILD_TESTS=${{ matrix.tests }} \
+            -DSOFTADASTRA_WARNINGS_AS_ERRORS=ON
+
+      - name: Build
+        run: |
+          cmake --build build -j"${BUILD_JOBS}"
+
+      - name: Run tests
+        if: matrix.tests == 'ON'
+        run: |
+          ctest --test-dir build --output-on-failure
+
+  install-check:
+    name: Install Package Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout core repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            cmake \
+            ninja-build \
+            g++ \
+            pkg-config \
+            git \
+            ca-certificates
+
+      - name: Configure install build
+        run: |
+          cmake -S . -B build-install -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX="$PWD/.ci-install" \
+            -DSOFTADASTRA_CORE_BUILD_TESTS=OFF \
+            -DSOFTADASTRA_WARNINGS_AS_ERRORS=ON
+
+      - name: Build
+        run: |
+          cmake --build build-install -j"${BUILD_JOBS}"
+
+      - name: Install
+        run: |
+          cmake --install build-install
+
+      - name: Verify installed package files
+        run: |
+          set -euxo pipefail
+
+          test -d .ci-install/include/softadastra
+          test -f .ci-install/lib/cmake/softadastra_core/softadastra_coreConfig.cmake
+          test -f .ci-install/lib/cmake/softadastra_core/softadastra_coreConfigVersion.cmake
+          test -f .ci-install/lib/cmake/softadastra_core/softadastraCoreTargets.cmake
+
+  static-analysis:
+    name: Static Analysis
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout core repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            cmake \
+            ninja-build \
+            clang \
+            g++ \
+            clang-tidy \
+            cppcheck \
+            pkg-config \
+            git \
+            ca-certificates
+
+      - name: Configure for analysis
+        run: |
+          cmake -S . -B build-analyze -G Ninja \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+            -DSOFTADASTRA_CORE_BUILD_TESTS=ON \
+            -DSOFTADASTRA_WARNINGS_AS_ERRORS=OFF
+
+      - name: Run clang-tidy
+        run: |
+          set +e
+          find src tests examples -name '*.cpp' -print0 2>/dev/null \
+            | xargs -0 -r -n1 -P2 clang-tidy -p build-analyze
+          exit 0
+
+      - name: Run cppcheck
+        run: |
+          set +e
+          cppcheck \
+            --enable=all \
+            --std=c++20 \
+            --inconclusive \
+            --quiet \
+            --suppress=missingIncludeSystem \
+            include/ src/ tests/ examples/ 2>/dev/null
+          exit 0
+
+  config-coverage:
+    name: Configuration Coverage
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout core repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            cmake \
+            ninja-build \
+            g++ \
+            pkg-config \
+            git \
+            ca-certificates
+
+      - name: Configure Debug with tests
+        run: |
+          cmake -S . -B build-debug-tests -G Ninja \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DSOFTADASTRA_CORE_BUILD_TESTS=ON \
+            -DSOFTADASTRA_WARNINGS_AS_ERRORS=ON
+
+      - name: Build Debug with tests
+        run: |
+          cmake --build build-debug-tests -j"${BUILD_JOBS}"
+
+      - name: Configure Release without tests
+        run: |
+          cmake -S . -B build-release-no-tests -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DSOFTADASTRA_CORE_BUILD_TESTS=OFF \
+            -DSOFTADASTRA_WARNINGS_AS_ERRORS=ON
+
+      - name: Build Release without tests
+        run: |
+          cmake --build build-release-no-tests -j"${BUILD_JOBS}"
+
+  summary:
+    name: Core CI Summary
+    needs:
+      - build
+      - install-check
+      - static-analysis
+      - config-coverage
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Print summary
+        run: |
+          echo "Softadastra core CI completed."
+          echo "- gcc and clang builds"
+          echo "- Debug and Release builds"
+          echo "- tests ON and OFF builds"
+          echo "- install package verification"
+          echo "- static analysis"
+          echo "- configuration coverage"
