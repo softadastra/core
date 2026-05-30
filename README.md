@@ -1,253 +1,110 @@
 # softadastra/core
 
-> Foundational primitives for Softadastra systems.
+> Core C++20 primitives for reliable Softadastra products.
 
-The `core` module provides the fundamental building blocks used across all Softadastra modules.
+`softadastra/core` is the foundation layer of the Softadastra C++ stack.
+
+Softadastra builds reliability-first products for local-first, offline-first, and distributed applications. This module provides the low-level primitives used across Softadastra products, SDKs, and infrastructure components.
+
+## Purpose
+
+`softadastra/core` exists to provide a stable foundation for higher-level modules such as WAL, Store, Sync, Transport, Metadata, Discovery, SDKs, and product infrastructure.
 
 It is designed to be:
 
 - Minimal
 - Stable
 - Deterministic
-- Fully reusable
+- Reusable
+- Product-ready
 
-## Purpose
+## What it provides
 
-The goal of `softadastra/core` is simple:
+This module provides foundational primitives such as:
 
-> Provide a clean, dependency-free foundation for all higher-level modules.
+- Result types
+- Strong types
+- Error types
+- Severity levels
+- Strongly typed identifiers
+- Time primitives
+- Hash primitives
+- Configuration primitives
+- Low-level utilities
 
-Everything in Softadastra depends on this module.
+## What it does not do
 
-## Core Principle
-
-> *Build once. Reuse everywhere.*
-
-The `core` module defines primitives that must remain:
-
-- Generic
-- Independent
-- Long-term stable
-
-## Responsibilities
-
-The `core` module provides:
-
-- Shared types (`Result`, `StrongType`, etc.)
-- Error system (`Error`, `ErrorCode`, `Severity`)
-- Strongly-typed identifiers (`FileId`, `DeviceId`, `OperationId`)
-- Time utilities (`Timestamp`, `Duration`, `Clock`)
-- Hash primitives (`Hash`, `Hasher`, `HashAlgorithm`)
-- Configuration primitives (`Config`, `ConfigValue`, `ConfigValidator`)
-- Low-level utilities (`Assert`, `ScopeGuard`, `StringUtils`)
-
-## What this module does NOT do
-
-- No sync logic
-- No filesystem logic
-- No network logic
-- No storage logic
-
-> 👉 It defines primitives, not behavior.
-
-## Design Principles
-
-### 1. Independence
-
-`core` must not depend on any other internal module.
-
-### 2. Stability
-
-Changes in `core` affect the entire system. It must evolve slowly and carefully.
-
-### 3. Determinism
-
-All primitives must behave consistently across platforms, machines, and time.
-
-### 4. Reusability
-
-Designed to be reusable in Softadastra Core, SDKs, and external systems.
-
-## Module Structure
-
-```
-modules/core/
-├── include/softadastra/core/
-│   ├── config/
-│   ├── errors/
-│   ├── hash/
-│   ├── ids/
-│   ├── time/
-│   ├── types/
-│   ├── utils/
-│   └── Core.hpp
-└── src/
-```
-
-## Core Components
-
-### Types
-
-Reusable generic primitives:
-
-- `Result<T, E>`
-- `StrongType<T, Tag>`
-- `NonCopyable`
-
-### Errors
-
-Structured error system:
-
-- `Error`
-- `ErrorCode`
-- `Severity`
-- `ErrorContext`
-
-> 👉 Designed for explicit error handling (no exceptions required)
-
-### Identifiers (IDs)
-
-Strongly-typed identifiers:
-
-- `FileId`
-- `DeviceId`
-- `OperationId`
-
-> 👉 Prevents misuse of raw primitives (e.g. mixing IDs)
-
-### Time
-
-Time-related utilities:
-
-- `Timestamp` (persistent time)
-- `Duration` (time intervals)
-- `Clock` (wall + monotonic)
-
-### Hash
-
-Hashing primitives:
-
-- `Hash`
-- `HashAlgorithm`
-- `Hasher` (interface)
-
-### Config
-
-Configuration system:
-
-- `Config`
-- `ConfigValue`
-- `ConfigValidator`
-
-### Utils
-
-Low-level helpers:
-
-- `Assert`
-- `ScopeGuard`
-- `StringUtils`
-
-## Example Usage
-
-```cpp
-#include <softadastra/core/Core.hpp>
-
-using namespace softadastra::core;
-
-int main()
-{
-    auto fileId = ids::FileId::generate();
-    auto now    = time::Timestamp::now();
-
-    if (!fileId.is_valid())
-    {
-        auto err = errors::Error::make(
-            errors::ErrorCode::InvalidArgument,
-            "invalid file id");
-
-        std::cout << err.message() << "\n";
-        return 1;
-    }
-
-    std::cout << "FileId: "    << fileId.str()    << "\n";
-    std::cout << "Now (ms): "  << now.millis()    << "\n";
-
-    return 0;
-}
-```
-
-## Public API
-
-Include everything via:
-
-```cpp
-#include <softadastra/core/Core.hpp>
-```
-
-## Dependencies
-
-**Internal:** none.
-
-**External:** C++20 standard library only.
-
-## Integration
-
-Used by all modules:
-
-- `fs`
-- `wal`
-- `metadata`
-- `discovery`
-- `transport`
-- `sync`
-- `store`
-
-## Rules
-
-- No dependency on higher-level modules
-- No business logic
-- No side effects
-- No hidden behavior
-
-## When to modify this module
-
-Only if:
-
-- A primitive is needed by multiple modules
-- The abstraction is fundamental
-- It does not introduce coupling
-
-**Do not add:**
+`softadastra/core` does not contain:
 
 - Sync logic
-- Network logic
-- Filesystem logic
-- Application-specific code
+- Storage engines
+- Network transport
+- Filesystem behavior
+- Product-specific logic
 
-## Roadmap
+It defines primitives, not product behavior.
 
-- [ ] Deterministic ID generation strategies
-- [ ] Streaming hash utilities
-- [ ] Structured logging primitives
-- [ ] Platform abstraction layer
+## Where it fits
 
-## Philosophy
+```txt
+Softadastra products
+        |
+SDKs and product APIs
+        |
+Sync, WAL, Store, Transport
+        |
+softadastra/core
+```
 
-> The `core` module is the foundation.
-> If core is clean, everything built on top stays clean.
-
-## Summary
-
-- Lowest-level module
-- No internal dependencies
-- Used everywhere
-- Designed for long-term stability
+`softadastra/core` is the lowest-level shared module. Higher-level modules may depend on it, but it must not depend on higher-level modules.
 
 ## Installation
 
 ```bash
 vix add @softadastra/core
 ```
+
+## Usage
+
+```cpp
+#include <softadastra/core/Core.hpp>
+```
+
+## Example
+
+```cpp
+#include <softadastra/core/Core.hpp>
+#include <iostream>
+
+int main()
+{
+    auto id = softadastra::core::ids::FileId::generate();
+
+    if (!id.is_valid())
+    {
+        auto error = softadastra::core::errors::Error::make(
+            softadastra::core::errors::ErrorCode::InvalidArgument,
+            "invalid file id"
+        );
+
+        std::cout << error.message() << "\n";
+        return 1;
+    }
+
+    std::cout << "FileId: " << id.str() << "\n";
+    return 0;
+}
+```
+
+## Requirements
+
+- C++20
+- Standard library only
+- No internal Softadastra dependency
+
+## Documentation
+
+For the full documentation, visit [docs.softadastra.com](https://docs.softadastra.com).
 
 ## License
 
